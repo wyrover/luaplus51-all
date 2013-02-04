@@ -7,6 +7,7 @@
 // The code presented in this file may be used in any environment it is
 // acceptable to use Lua.
 ///////////////////////////////////////////////////////////////////////////////
+#define LUA_CORE
 #include "LuaPlus.h"
 #include <string.h>
 #ifdef WIN32
@@ -17,9 +18,9 @@
 #endif // WIN32
 #endif // WIN32
 
-//-----------------------------------------------------------------------------
-LUA_EXTERN_C_BEGIN
+extern "C" {
 
+//-----------------------------------------------------------------------------
 static void *luaplus_alloc (void *ud, void *ptr, size_t osize, size_t nsize) {
   (void)osize;
   (void)ud;
@@ -35,23 +36,22 @@ static void *luaplus_alloc (void *ud, void *ptr, size_t osize, size_t nsize) {
 static lua_Alloc luaHelper_defaultAlloc = luaplus_alloc;
 static void* luaHelper_ud = NULL;
 
-void lua_getdefaultallocfunction(lua_Alloc* allocFunc, void** ud)
+LUA_API void lua_getdefaultallocfunction(lua_Alloc* allocFunc, void** ud)
 {
 	*allocFunc = luaHelper_defaultAlloc;
 	*ud = luaHelper_ud;
 }
 
 
-void lua_setdefaultallocfunction(lua_Alloc allocFunc, void* ud)
+LUA_API void lua_setdefaultallocfunction(lua_Alloc allocFunc, void* ud)
 {
 	luaHelper_defaultAlloc = allocFunc ? allocFunc : luaplus_alloc;
 	luaHelper_ud = ud;
 }
 
+}
 
 int LuaState_FatalError( lua_State* );
-
-LUA_EXTERN_C_END
 
 namespace LuaPlus
 {
@@ -140,8 +140,6 @@ LuaStackObject LuaState::PushFString(const char *fmt, ...) {
 
 } // namespace LuaPlus
 
-LUA_EXTERN_C_BEGIN
-
 /**
 **/
 int LuaState_FatalError( lua_State* L )
@@ -162,4 +160,3 @@ int LuaState_FatalError( lua_State* L )
 	return -1;
 }
 
-LUA_EXTERN_C_END

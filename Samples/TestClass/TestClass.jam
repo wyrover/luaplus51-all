@@ -11,8 +11,9 @@ local SRCS =
 		TestClass.cpp
 ;
 
-C.IncludeDirectories TestClass : $(LUAPLUS)/Src ;
-C.LinkLibraries TestClass : lua51 ;
+C.Defines TestClass : LUA_BUILD_AS_DLL ;
+C.IncludeDirectories TestClass : $(LUAPLUS)/Src $(LUAPLUS)/Src/LuaPlus/src.lua52 ;
+C.LinkLibraries TestClass : lua52 ;
 
 C.Application TestClass : $(SRCS) ;
 

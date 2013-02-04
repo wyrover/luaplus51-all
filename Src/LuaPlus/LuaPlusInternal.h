@@ -11,8 +11,8 @@
 #define LUAPLUS__LUAPLUSINTERNAL_H
 
 extern "C" {
-#include "src/lua.h"
-#include "src/lauxlib.h"
+#include "lua.h"
+#include "lauxlib.h"
 }
 
 #define LUAPLUS_INLINE inline
@@ -26,10 +26,10 @@ namespace LuaPlus
 class LuaException
 {
 public:
-	LUAPLUS_CLASS_API LuaException(const char* message);
-	LUAPLUS_CLASS_API ~LuaException();
-    LUAPLUS_CLASS_API LuaException(const LuaException& src);
-    LUAPLUS_CLASS_API LuaException& operator=(const LuaException& src);
+	LuaException(const char* message);
+	~LuaException();
+    LuaException(const LuaException& src);
+    LuaException& operator=(const LuaException& src);
 
 	const char* GetErrorMessage() const			{  return m_message;  }
 

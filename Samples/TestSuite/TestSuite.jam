@@ -18,8 +18,9 @@ local SRCS =
 		TestUnicode.lua
 ;
 
-C.IncludeDirectories TestSuite : $(LUAPLUS)/Src $(LUAPLUS)/Samples/UnitTest++/src ;
-C.LinkLibraries TestSuite : lua51 UnitTest++ ;
+C.Defines TestSuite : LUA_BUILD_AS_DLL ;
+C.IncludeDirectories TestSuite : $(LUAPLUS)/Src $(LUAPLUS)/Src/LuaPlus/src.lua52 $(LUAPLUS)/Samples/UnitTest++/src ;
+C.LinkLibraries TestSuite : lua52 UnitTest++ ;
 
 TEST_SUITE_EXE = [ C.Application TestSuite : $(SRCS) ] ;
 TEST_SUITE_CWD = $(SUBDIR) ;

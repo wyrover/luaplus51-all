@@ -14,7 +14,7 @@
 /* macro to `unsign' a character */
 #define uchar(c)        ((unsigned char)(c))
 
-LUA_EXTERN_C int str_format_helper (luaL_Buffer* b, lua_State *L, int arg);
+extern "C" int str_format_helper (luaL_Buffer* b, lua_State *L, int arg);
 
 namespace LuaPlus {
 
@@ -43,6 +43,7 @@ static void luaI_addquotednonwidebinary (LuaStateOutFile& file, const char* s, s
 	file.Print("%c", '"');
 }
 
+#if 0
 
 #define L_ESC		'%'
 
@@ -255,7 +256,7 @@ static int LS_LuaFileIndent(LuaState* state) {
 
 	return 0;
 }
-
+#endif
 
 #if LUAPLUS_DUMPOBJECT
 
@@ -1060,10 +1061,11 @@ void LuaStateOutFile::Indent(unsigned int indentLevel)
 
 } // namespace LuaPlus
 
-
-LUA_EXTERN_C int str_format_helper (luaL_Buffer *b, lua_State *L, int arg) {
+#if 0
+extern "C" int str_format_helper (luaL_Buffer *b, lua_State *L, int arg) {
 	return LuaPlus::str_format_helper(b, L, arg);
 }
+#endif
 
 
 #if LUAPLUS_DUMPOBJECT

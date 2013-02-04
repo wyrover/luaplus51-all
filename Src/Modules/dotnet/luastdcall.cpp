@@ -1,11 +1,9 @@
 // steffenj: replaced all occurances of LUA_DLLEXPORT with LUA_DLLEXPORT due to "macro redefinition" error
 // there's probably a "correct" way to solve this but right now I prefer the one that works :)
 
-#include "../../LuaPlus/LuaPlus.h"
-
 extern "C" {
-#include "../../LuaPlus/src/lualib.h"
-#include "../../LuaPlus/src/lauxlib.h"
+#include "lualib.h"
+#include "lauxlib.h"
 }
 #include "luastdcall.h"
 #include <stdio.h>

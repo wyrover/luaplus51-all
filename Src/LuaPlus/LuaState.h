@@ -36,10 +36,10 @@ public:
 
 
 	///////////////////////////////////////////////////////////////////////////
-	LUAPLUS_CLASS_API static LuaState* Create();
-	LUAPLUS_CLASS_API static LuaState* Create(bool initStandardLibrary);
-	LUAPLUS_CLASS_API static LuaObject CreateThread(LuaState* parentState);
-	LUAPLUS_CLASS_API static void Destroy(LuaState* state);
+	LUA_API static LuaState* Create();
+	LUA_API static LuaState* Create(bool initStandardLibrary);
+	LUA_API static LuaObject CreateThread(LuaState* parentState);
+	LUA_API static void Destroy(LuaState* state);
 
 	lua_CFunction AtPanic(lua_CFunction panicf);
 
@@ -50,6 +50,7 @@ public:
 	LuaStackObject StackTop();
 	int GetTop();
 	void SetTop(int index);
+	void PushGlobalTable();
 	void PushValue(int index);
 	void PushValue(LuaStackObject& object);
 	void Remove(int index);
@@ -98,8 +99,8 @@ public:
 	LuaStackObject PushInteger(int n);
 	LuaStackObject PushLString(const char *s, size_t len);
 	LuaStackObject PushString(const char *s);
-	LUAPLUS_CLASS_API const char* PushVFString(const char* fmt, va_list argp);
-	LUAPLUS_CLASS_API const char* PushFString(const char* fmt, ...);
+	LUA_API const char* PushVFString(const char* fmt, va_list argp);
+	LUA_API const char* PushFString(const char* fmt, ...);
 
 	LuaStackObject PushCClosure(lua_CFunction fn, int n);
 	LuaStackObject PushCClosure(int (*f)(LuaState*), int n);
@@ -142,8 +143,7 @@ public:
 	void Call(int nargs, int nresults);
 	int PCall(int nargs, int nresults, int errfunc);
 	int CPCall(lua_CFunction func, void* ud);
-	int Load(lua_Reader reader, void *dt, const char *chunkname);
-	int WLoad(lua_Reader reader, void *data, const char *chunkname);
+	int Load(lua_Reader reader, void *data, const char *chunkname, const char *mode);
 
 #if LUA_ENDIAN_SUPPORT
 	int Dump(lua_Writer writer, void* data, int strip, char endian);
@@ -155,14 +155,8 @@ public:
 	** coroutine functions
 	*/
 	int Yield_(int nresults);
-	int Resume(int narg);
+	int Resume(lua_State *from, int nargs);
 	int Status();
-
-	/* deprecated begin */
-	int CoYield(int nresults);
-	int CoResume(int narg);
-	int CoStatus();
-	/* deprecated end */
 
 	/*
 	** garbage-collection function and options
@@ -213,7 +207,7 @@ public:
 #endif /* LUA_FASTREF_SUPPORT */
 
 	// lauxlib functions.
-	void OpenLib(const char *libname, const luaL_Reg *l, int nup);
+	void NewLib(const luaL_Reg *l, int nup);
 	void LRegister(const char *libname, const luaL_Reg *l);
 	int GetMetaField(int obj, const char *e);
 	int CallMeta(int obj, const char *e);
@@ -368,6 +362,18 @@ private:
 
 
 } // namespace LuaPlus
+
+
+namespace LPCD {
+	using namespace LuaPlus;
+
+	template<> struct Type<LuaPlus::LuaState*> {
+		static inline void Push(lua_State* L, LuaPlus::LuaState* value)						{  lua_pushlightuserdata(L, value);  }
+		static inline bool Match(lua_State* L, int idx)										{  (void)L, (void)idx;  return true;  }
+		static inline LuaPlus::LuaState* Get(lua_State* L, int idx)							{  return lua_State_to_LuaState(L);  }
+	};
+} // namespace LPCD
+
 
 
 

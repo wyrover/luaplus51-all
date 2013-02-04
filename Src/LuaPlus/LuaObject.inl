@@ -338,7 +338,7 @@ inline size_t LuaObject::ObjLen() {
 	}
 #endif // !LUA_FASTREF_SUPPORT
 	LUA_FASTREF_PUSH();
-	return lua_objlen(L, LUA_FASTREF_REF_1);
+	return lua_rawlen(L, LUA_FASTREF_REF_1);
 }
 
 
@@ -381,7 +381,7 @@ inline size_t LuaObject::StrLen() const {
 	luaplus_assert(L);
 	luaplus_assert(IsString());
 	LUA_FASTREF_PUSH();
-	return lua_objlen(L, LUA_FASTREF_REF_1);
+	return lua_rawlen(L, LUA_FASTREF_REF_1);
 }
 
 
@@ -521,7 +521,7 @@ inline void LuaObject::Sort() {
 inline size_t LuaObject::GetCount() const {
 	luaplus_assert(L);
 	Push(L);
-	int count = lua_objlen(L, -1);
+	int count = lua_rawlen(L, -1);
 	lua_pop(L, 1);
 	return count;
 }

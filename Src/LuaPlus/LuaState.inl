@@ -66,6 +66,10 @@ LUAPLUS_INLINE void LuaState::SetTop(int index)
 	lua_settop(LuaState_to_lua_State(this), index);
 }
 
+LUAPLUS_INLINE void LuaState::PushGlobalTable() throw() {
+	lua_pushglobaltable(LuaState_to_lua_State(this));
+}
+
 LUAPLUS_INLINE void LuaState::PushValue(int index)
 {
 	lua_pushvalue(LuaState_to_lua_State(this), index);
@@ -106,22 +110,22 @@ LUAPLUS_INLINE void LuaState::XMove(LuaState* to, int n)
 
 LUAPLUS_INLINE int LuaState::Equal(const LuaObject& o1, const LuaObject& o2) {
 #if LUA_FASTREF_SUPPORT
-	return lua_equal(o1.L, o1.ref, o2.ref);
+	return lua_compare(o1.L, o1.ref, o2.ref, LUA_OPEQ);
 #else
 	LuaFastRefPush _frp1(&o1);
 	LuaFastRefPush _frp2(&o2);
-	return lua_equal(o1.L, -2, -1);
+	return lua_compare(o1.L, -2, -1, LUA_OPEQ);
 #endif // LUA_FASTREF_SUPPORT
 }
 
 
 LUAPLUS_INLINE int LuaState::LessThan(const LuaObject& o1, const LuaObject& o2) {
 #if LUA_FASTREF_SUPPORT
-	return lua_lessthan(o1.L, o1.ref, o2.ref);
+	return lua_compare(o1.L, o1.ref, o2.ref, LUA_OPLT);
 #else
 	LuaFastRefPush _frp1(&o1);
 	LuaFastRefPush _frp2(&o2);
-	return lua_lessthan(o1.L, -2, -1);
+	return lua_compare(o1.L, -2, -1, LUA_OPLT);
 #endif // LUA_FASTREF_SUPPORT
 }
 
@@ -199,7 +203,7 @@ LUAPLUS_INLINE const char* LuaState::TypeName(int type) {
 
 LUAPLUS_INLINE int LuaState::Equal(int index1, int index2)
 {
-	return lua_equal(LuaState_to_lua_State(this), index1, index2);
+	return lua_compare(LuaState_to_lua_State(this), index1, index2, LUA_OPEQ);
 }
 
 LUAPLUS_INLINE int LuaState::RawEqual(int index1, int index2)
@@ -209,7 +213,7 @@ LUAPLUS_INLINE int LuaState::RawEqual(int index1, int index2)
 
 LUAPLUS_INLINE int LuaState::LessThan(int index1, int index2)
 {
-	return lua_lessthan(LuaState_to_lua_State(this), index1, index2);
+	return lua_compare(LuaState_to_lua_State(this), index1, index2, LUA_OPLT);
 }
 
 
@@ -239,7 +243,7 @@ LUAPLUS_INLINE const char* LuaState::ToString(int index) {
 
 
 LUAPLUS_INLINE size_t LuaState::ObjLen(int index) {
-	return lua_objlen(LuaState_to_lua_State(this), index);
+	return lua_rawlen(LuaState_to_lua_State(this), index);
 }
 
 
@@ -383,10 +387,12 @@ LUAPLUS_INLINE LuaStackObject LuaState::GetMetatable(int index)
 	return LuaStackObject(this, lua_gettop(LuaState_to_lua_State(this)));
 }
 
+/*TODO
 LUAPLUS_INLINE LuaStackObject LuaState::GetFEnv(int index) {
 	lua_getfenv(LuaState_to_lua_State(this), index);
 	return LuaStackObject(this, lua_gettop(LuaState_to_lua_State(this)));
 }
+*/
 
 LUAPLUS_INLINE LuaObject LuaState::GetGlobal(const char *name) {
 	lua_State* L = LuaState_to_lua_State(this);
@@ -396,7 +402,8 @@ LUAPLUS_INLINE LuaObject LuaState::GetGlobal(const char *name) {
 
 
 LUAPLUS_INLINE LuaObject LuaState::GetGlobals() throw() {
-	return LuaObject( this, LUA_GLOBALSINDEX );
+	lua_pushglobaltable(LuaState_to_lua_State(this));
+	return LuaObject(LuaState_to_lua_State(this), true);
 }
 
 
@@ -407,7 +414,8 @@ LUAPLUS_INLINE LuaObject LuaState::GetRegistry() {
 
 LUAPLUS_INLINE LuaStackObject LuaState::GetGlobals_Stack()
 {
-	return LuaStackObject(*this, LUA_GLOBALSINDEX);
+	lua_pushglobaltable(LuaState_to_lua_State(this));
+	return LuaStackObject(*this, GetTop());
 }
 
 LUAPLUS_INLINE LuaStackObject LuaState::GetGlobal_Stack(const char *name)
@@ -446,10 +454,12 @@ LUAPLUS_INLINE void LuaState::SetMetatable(int index)
 	lua_setmetatable(LuaState_to_lua_State(this), index);
 }
 
+/*TODO
 LUAPLUS_INLINE void LuaState::SetFEnv(int index)
 {
 	lua_setfenv(LuaState_to_lua_State(this), index);
 }
+*/
 
 // `load' and `call' functions (load and run Lua code)
 LUAPLUS_INLINE void LuaState::Call(int nargs, int nresults) {
@@ -464,24 +474,28 @@ LUAPLUS_INLINE int LuaState::PCall(int nargs, int nresults, int errf) {
 
 LUAPLUS_INLINE int LuaState::CPCall(lua_CFunction func, void* ud)
 {
-	return lua_cpcall(LuaState_to_lua_State(this), func, ud);
+	lua_State* L = LuaState_to_lua_State(this);
+	lua_pushcfunction(L, func);
+	lua_pushlightuserdata(L, ud);
+	return lua_pcall(L, 1, 0, 0);
 }
 
-LUAPLUS_INLINE int LuaState::Load(lua_Reader reader, void *dt, const char *chunkname)
+LUAPLUS_INLINE int LuaState::Load(lua_Reader reader, void *data, const char *chunkname, const char *mode)
 {
-	return lua_load(LuaState_to_lua_State(this), reader, dt, chunkname);
+	return lua_load(LuaState_to_lua_State(this), reader, data, chunkname, mode);
 }
 
 #if LUA_ENDIAN_SUPPORT
 
-LUAPLUS_INLINE int LuaState::Dump(lua_Chunkwriter writer, void* data, int strip, char endian)
+LUAPLUS_INLINE int LuaState::Dump(lua_Writer writer, void* data, int strip, char endian)
 {
-	return lua_dumpendian(LuaState_to_lua_State(this), writer, data, strip, endian);
+//	return lua_dumpendian(LuaState_to_lua_State(this), writer, data, strip, endian);
+	return lua_dump(LuaState_to_lua_State(this), writer, data);
 }
 
 #else
 
-LUAPLUS_INLINE int LuaState::Dump(lua_Chunkwriter writer, void* data)
+LUAPLUS_INLINE int LuaState::Dump(lua_Writer writer, void* data)
 {
 	return lua_dump(LuaState_to_lua_State(this), writer, data);
 }
@@ -521,28 +535,12 @@ LUAPLUS_INLINE int LuaState::Yield_(int nresults) {
 }
 
 
-LUAPLUS_INLINE int LuaState::Resume(int narg) {
-	return lua_resume(LuaState_to_lua_State(this), narg);
+LUAPLUS_INLINE int LuaState::Resume(lua_State *from, int nargs) {
+	return lua_resume(LuaState_to_lua_State(this), from, nargs);
 }
 
 
 LUAPLUS_INLINE int LuaState::Status() {
-	return lua_status(LuaState_to_lua_State(this));
-}
-
-
-LUAPLUS_INLINE int LuaState::CoYield(int nresults)
-{
-	return lua_yield(LuaState_to_lua_State(this), nresults);
-}
-
-LUAPLUS_INLINE int LuaState::CoResume(int narg)
-{
-	return lua_resume(LuaState_to_lua_State(this), narg);
-}
-
-LUAPLUS_INLINE int LuaState::CoStatus()
-{
 	return lua_status(LuaState_to_lua_State(this));
 }
 
@@ -607,7 +605,7 @@ LUAPLUS_INLINE void LuaState::Register(const char* key, lua_CFunction f) {
 }
 
 LUAPLUS_INLINE size_t LuaState::StrLen(int index) {
-	return lua_strlen(LuaState_to_lua_State(this), index);
+	return lua_rawlen(LuaState_to_lua_State(this), index);
 }
 
 LUAPLUS_INLINE void LuaState::SetGlobal(const char* key) {
@@ -690,13 +688,18 @@ LUAPLUS_INLINE void LuaState::GetFastRef(int ref) {
 
 
 // lauxlib functions.
-LUAPLUS_INLINE void LuaState::OpenLib(const char *libname, const luaL_Reg *l, int nup) {
-	luaI_openlib(LuaState_to_lua_State(this), libname, l, nup);
+LUAPLUS_INLINE void LuaState::NewLib(const luaL_Reg *l, int nup) {
+	lua_State* L = LuaState_to_lua_State(this);
+	lua_createtable(L, 0, 0);
+	luaL_setfuncs(L, l, nup);
 }
 
 
 LUAPLUS_INLINE void LuaState::LRegister(const char *libname, const luaL_Reg *l) {
-	luaL_register(LuaState_to_lua_State(this), libname, l);
+	lua_State* L = LuaState_to_lua_State(this);
+	lua_createtable(L, 0, 0);
+	luaL_setfuncs(L, l, 0);
+	lua_setglobal(L, libname);
 }
 
 
@@ -712,7 +715,10 @@ LUAPLUS_INLINE int LuaState::CallMeta(int obj, const char *e) {
 
 LUAPLUS_INLINE int LuaState::TypeError(int narg, const char* tname)
 {
-	return luaL_typerror(LuaState_to_lua_State(this), narg, tname);
+	lua_State* L = LuaState_to_lua_State(this);
+	const char *msg = lua_pushfstring(L, "%s expected, got %s",
+		tname, luaL_typename(L, narg));
+	return luaL_argerror(L, narg, msg);
 }
 
 
@@ -877,11 +883,6 @@ LUAPLUS_INLINE const char* LuaState::GSub(const char *s, const char *p, const ch
 }
 
 
-LUAPLUS_INLINE const char* LuaState::FindTable(int idx, const char *fname, int szhint)
-{
-	return luaL_findtable(LuaState_to_lua_State(this), idx, fname, szhint);
-}
-
 
 LUAPLUS_INLINE LuaStackObject LuaState::PushCClosure(int (*f)(LuaState*), int n)
 {
@@ -990,7 +991,7 @@ inline LuaObject LuaState::GetLocalByName( int level, const char* name )
 } // namespace LuaPlus
 
 extern "C" {
-#include "src/lualib.h"
+#include "lualib.h"
 }
 
 namespace LuaPlus {
@@ -1006,12 +1007,13 @@ inline int pmain (lua_State *L)
 **/
 inline void LuaState::OpenLibs()
 {
-#if LUAPLUS_INCLUDE_STANDARD_LIBRARY
+//#if LUAPLUS_INCLUDE_STANDARD_LIBRARY
 	lua_State* L = LuaState_to_lua_State(this);
 	int top = lua_gettop(L);
-	lua_cpcall(LuaState_to_lua_State(this), &pmain, NULL);
+	lua_pushcfunction(L, &pmain);
+	lua_pcall(L, 0, 0, 0);
 	lua_settop(L, top);
-#endif // LUAPLUS_INCLUDE_STANDARD_LIBRARY
+//#endif // LUAPLUS_INCLUDE_STANDARD_LIBRARY
 }
 
 } // namespace LuaPlus

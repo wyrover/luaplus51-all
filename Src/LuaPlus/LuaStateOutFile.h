@@ -33,14 +33,14 @@ namespace LuaPlus
 class LuaStateOutFile
 {
 public:
-	LUAPLUS_CLASS_API LuaStateOutFile();
-	LUAPLUS_CLASS_API LuaStateOutFile(const char* fileName);
-	LUAPLUS_CLASS_API virtual ~LuaStateOutFile();
-	LUAPLUS_CLASS_API virtual bool Open( const char* fileName );
-	LUAPLUS_CLASS_API virtual void Close();
-	LUAPLUS_CLASS_API virtual void Print( const char* str, ... );
-	LUAPLUS_CLASS_API bool Assign( FILE* file );
-	LUAPLUS_CLASS_API void Indent( unsigned int indentLevel );
+	LUA_API LuaStateOutFile();
+	LUA_API LuaStateOutFile(const char* fileName);
+	LUA_API virtual ~LuaStateOutFile();
+	LUA_API virtual bool Open( const char* fileName );
+	LUA_API virtual void Close();
+	LUA_API virtual void Print( const char* str, ... );
+	LUA_API bool Assign( FILE* file );
+	LUA_API void Indent( unsigned int indentLevel );
 
 protected:
 	FILE* m_file;

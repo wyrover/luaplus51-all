@@ -10,10 +10,10 @@
 #ifndef LUAPLUS__LUAPLUSCD_H
 #define LUAPLUS__LUAPLUSCD_H
 
-LUA_EXTERN_C_BEGIN
-#include "src/lua.h"
-#include "src/lauxlib.h"
-LUA_EXTERN_C_END
+extern "C" {
+#include "lua.h"
+#include "lauxlib.h"
+}
 
 #include <stdlib.h>
 #include <string.h>
@@ -2267,7 +2267,8 @@ inline void* lpcd_checkobject(lua_State* L, int index, const char* tname, bool t
 				}
 			}
 			if (throwError) {
-				luaL_typerror(L, index, tname);  /* else error */
+                const char *msg = lua_pushfstring(L, "%s expected, got %s", tname, luaL_typename(L, index));
+                luaL_argerror(L, index, msg);
 			}
 			return NULL;
 		} else {
@@ -2277,7 +2278,8 @@ inline void* lpcd_checkobject(lua_State* L, int index, const char* tname, bool t
 		}
 	} else {
 		if (throwError) {
-			luaL_typerror(L, index, tname);
+			const char *msg = lua_pushfstring(L, "%s expected, got %s", tname, luaL_typename(L, index));
+			luaL_argerror(L, index, msg);
 		} else {
 			if (isTable)
 				lua_pop(L, 1);

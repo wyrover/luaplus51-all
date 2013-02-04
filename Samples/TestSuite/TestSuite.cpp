@@ -124,7 +124,7 @@ TEST(LuaState_SetTop)
 TEST(LuaState_PushValue)
 {
 	LuaStateOwner state(false);
-	state->PushValue(LUA_GLOBALSINDEX);
+	state->PushGlobalTable();
 	state->PushNumber(5);
 	state->PushNumber(10);
 	state->PushNumber(15);
@@ -560,9 +560,9 @@ TEST(LuaState_GetGlobals)
 {
 	LuaStateOwner state(false);
 	lua_State* L = state->GetCState();
-	lua_pushvalue(L, LUA_GLOBALSINDEX);
-	state->GetGlobals().Push();
-	CHECK(lua_equal(L, -1, -2));
+	state->PushGlobalTable();
+	state->GetGlobals().Push(state);
+	CHECK(lua_compare(L, -1, -2, LUA_OPEQ));
 }
 
 
@@ -571,9 +571,9 @@ TEST(LuaState_GetGlobals_Stack)
 {
 	LuaStateOwner state(false);
 	lua_State* L = state->GetCState();
-	lua_pushvalue(L, LUA_GLOBALSINDEX);
+	state->PushGlobalTable();
 	state->GetGlobals_Stack().Push();
-	CHECK(lua_equal(L, -1, -2));
+	CHECK(lua_compare(L, -1, -2, LUA_OPEQ));
 }
 
 
@@ -592,8 +592,8 @@ TEST(LuaState_GetRegistry)
 	LuaStateOwner state(false);
 	lua_State* L = state->GetCState();
 	lua_pushvalue(L, LUA_REGISTRYINDEX);
-	state->GetRegistry().Push();
-	CHECK(lua_equal(L, -1, -2));
+	state->GetRegistry().Push(state);
+	CHECK(lua_compare(L, -1, -2, LUA_OPEQ));
 }
 
 
@@ -604,7 +604,7 @@ TEST(LuaState_GetRegistry_Stack)
 	lua_State* L = state->GetCState();
 	lua_pushvalue(L, LUA_REGISTRYINDEX);
 	state->GetRegistry_Stack().Push();
-	CHECK(lua_equal(L, -1, -2));
+	CHECK(lua_compare(L, -1, -2, LUA_OPEQ));
 }
 
 
@@ -696,7 +696,7 @@ TEST(LuaState_Load)
 	strcpy(loadInfo.buffer, "MyNumber = 5");
 	loadInfo.size = strlen(loadInfo.buffer);
 
-	int ret = state->Load(LuaState_Load_Helper_Get, &loadInfo, NULL);
+	int ret = state->Load(LuaState_Load_Helper_Get, &loadInfo, NULL, NULL);
 	CHECK_EQUAL(0, ret);
 
 	state->PCall(0, 0, 0);
@@ -979,7 +979,8 @@ TEST(LuaObject_CreationWithLuaStatePointer)
 TEST(LuaObject_CreationWithLuaStatePointerAndStackIndex)
 {
 	LuaStateOwner state;
-	LuaObject obj(state, LUA_GLOBALSINDEX);
+	lua_pushglobaltable(*state);
+	LuaObject obj(state, true);
 	CHECK(obj.IsTable());
 }
 
@@ -1076,7 +1077,7 @@ TEST(LuaObject_Assign)
 	CHECK(obj.Type() == LUA_TNUMBER);
 	CHECK(obj.IsNumber());
 	CHECK(obj.GetNumber() == 5.5);
-	CHECK(obj.GetInteger() == 5);		// Should downcast.
+	CHECK(obj.GetInteger() == 6);		// Should downcast.
 	CHECK(strcmp(obj.TypeName(), "number") == 0);
 
 	obj.Assign(state, "Hello");
@@ -1546,10 +1547,10 @@ TEST(LuaObject_PushStack)
 	LuaStateOwner state;
 	LuaObject stringObj(state);
 	stringObj.Assign(state, "Test");
-	stringObj.Push();
+	stringObj.Push(state);
     LuaStackObject stackObj = state->StackTop();
 	CHECK(state->GetTop() == 1);
-	stringObj.Push();
+	stringObj.Push(state);
     LuaStackObject stack2Obj = state->StackTop();
 	CHECK(state->GetTop() == 2);
 	CHECK(stackObj == stack2Obj);
@@ -1725,7 +1726,7 @@ TEST(LuaObject_DirectFunctionCall)
 	LuaObject addObj = state->GetGlobals()["Add"];
 	LuaFunction<int> addFunction = addObj;
 	LuaObject addPrintObj = state->GetGlobals()["AddPrint"];
-	LuaFunction<void> addPrintFunction = addPrintObj;
+	LuaFunctionVoid addPrintFunction = addPrintObj;
 	LuaObject mulObj = state->GetGlobals()["Mul"];
 	LuaFunction<float> mulFunction = mulObj;
 
@@ -1786,7 +1787,7 @@ TEST(LuaObject_DirectFunctionRegister)
 	LuaObject addObj = state->GetGlobals()["Add"];
 	LuaFunction<int> addFunction = addObj;
 	LuaObject addPrintObj = state->GetGlobals()["AddPrint"];
-	LuaFunction<void> addPrintFunction = addPrintObj;
+	LuaFunctionVoid addPrintFunction = addPrintObj;
 	LuaObject mulObj = state->GetGlobals()["Mul"];
 	LuaFunction<float> mulFunction = mulObj;
 	

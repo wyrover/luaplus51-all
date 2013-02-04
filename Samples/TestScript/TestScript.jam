@@ -18,8 +18,9 @@ local SRCS =
 		TestScript.cpp
 ;
 
-C.IncludeDirectories TestScript : $(LUAPLUS)/Src ;
-C.LinkLibraries TestScript : lua51 ;
+C.Defines TestScript : LUA_BUILD_AS_DLL ;
+C.IncludeDirectories TestScript : $(LUAPLUS)/Src $(LUAPLUS)/Src/LuaPlus/src.lua52 ;
+C.LinkLibraries TestScript : lua52 ;
 
 C.Application TestScript : $(SRCS) ;
 
